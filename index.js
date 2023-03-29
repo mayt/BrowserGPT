@@ -137,11 +137,10 @@ async function queryGPT(messages, options = {}) {
     })
   );
   console.log('Comands to be executed'.green);
+  const codeRegex = /```(.*)\n(?<code>[\w\W\n]+)\n```/;
   const cleanedCommands = completion.data.choices[0].message.content
-    .trim()
-    .split('\n')
-    .slice(1, -1)
-    .join('\n');
+    .match(codeRegex)
+    .groups.code.trim();
 
   console.log(cleanedCommands);
   console.log('EOF'.green);
