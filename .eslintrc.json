@@ -1,0 +1,14 @@
+{
+  "extends": [
+    "plugin:import/recommended",
+    "plugin:import/warnings",
+    "eslint:recommended",
+    "plugin:prettier/recommended",
+    "prettier"
+  ],
+  "env": {
+    "es6": true,
+    "node": true,
+    "browser": true
+  }
+}
