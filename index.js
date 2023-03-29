@@ -137,12 +137,18 @@ async function queryGPT(messages, options = {}) {
     })
   );
   console.log('Comands to be executed'.green);
-  const codeRegex = /```(.*)\n(?<code>[\w\W\n]+)\n```/;
-  const cleanedCommands = completion.data.choices[0].message.content
-    .match(codeRegex)
-    .groups.code.trim();
+  let cleanedCommands = null;
+  try {
+    const codeRegex = /```(.*)\n(?<code>[\w\W\n]+)\n```/;
+    cleanedCommands = completion.data.choices[0].message.content
+      .match(codeRegex)
+      .groups.code.trim();
 
-  console.log(cleanedCommands);
+    console.log(cleanedCommands);
+  } catch (e) {
+    console.log('No code found'.red);
+  }
+
   console.log('EOF'.green);
 
   return cleanedCommands;
