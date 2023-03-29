@@ -5,6 +5,7 @@ import {chromium} from 'playwright';
 import prompt from 'prompt';
 // eslint-disable-next-line no-unused-vars
 import colors from '@colors/colors';
+import {parse} from 'node-html-parser';
 
 import {Command} from 'commander';
 
@@ -16,8 +17,6 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 const AsyncFunction = async function () {}.constructor;
-
-import {parse} from 'node-html-parser';
 
 const tagsToLog = [
   'a',
@@ -68,7 +67,7 @@ function getStructure(node, reducedText = false) {
     }
     if (tagsToLog.includes(node.rawTagName)) {
       if (nodeModifier || alwaysLog.includes(node.rawTagName)) {
-        write(`${node.rawTagName}${idStr}`);
+        write(`${node.rawTagName}${nodeModifier}`);
       }
     }
 
