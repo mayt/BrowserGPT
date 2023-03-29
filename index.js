@@ -193,9 +193,7 @@ await page.getByText(articleByText, { exact: true }).click(articleByText, {force
 async function main(options) {
   const url = options.url;
   const browser = await chromium.launch({headless: false});
-  const browserContext = await browser.newContext({
-    viewport: {width: 1024, height: 830},
-  });
+  const browserContext = await browser.newContext();
   const page = await browserContext.newPage();
   await page.goto(url);
 
