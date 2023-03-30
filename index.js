@@ -1,20 +1,16 @@
 import {retry} from '@lifeomic/attempt';
 import dotenv from 'dotenv';
-import {OpenAIApi, Configuration} from 'openai';
 import {chromium} from 'playwright';
 import prompt from 'prompt';
 // eslint-disable-next-line no-unused-vars
 import colors from '@colors/colors';
 import {parse} from 'node-html-parser';
-
 import {Command} from 'commander';
 
-dotenv.config();
+import {ChatOpenAI} from 'langchain/chat_models';
+import {HumanChatMessage, SystemChatMessage} from 'langchain/schema';
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
+dotenv.config();
 
 const AsyncFunction = async function () {}.constructor;
 
@@ -128,21 +124,13 @@ async function parseSite(page, options = {}) {
   return '';
 }
 
-async function queryGPT(messages, options = {}) {
-  const completion = await retry(async () =>
-    openai.createChatCompletion({
-      model: options.model || 'gpt-3.5-turbo',
-      temperature: 0.1,
-      messages,
-    })
-  );
+async function queryGPT(chatApi, messages) {
+  const completion = await retry(async () => chatApi.call(messages));
   console.log('Comands to be executed'.green);
   let cleanedCommands = null;
   try {
-    const codeRegex = /```(.*)\n(?<code>[\w\W\n]+)\n```/;
-    cleanedCommands = completion.data.choices[0].message.content
-      .match(codeRegex)
-      .groups.code.trim();
+    const codeRegex = /```(.*)(\r\n|\r|\n)(?<code>[\w\W\n]+)(\r\n|\r|\n)```/;
+    cleanedCommands = completion.text.match(codeRegex).groups.code.trim();
 
     console.log(cleanedCommands);
   } catch (e) {
@@ -154,7 +142,7 @@ async function queryGPT(messages, options = {}) {
   return cleanedCommands;
 }
 
-async function doAction(page, task, options = {}) {
+async function doAction(chatApi, page, task, options = {}) {
   const systemPrompt = `
 You are a programmer and your job is to write code. You are working on a playwright file. You will write the commands necessary to execute the given input. 
 
@@ -176,13 +164,10 @@ await page.getByText(articleByText, { exact: true }).click(articleByText, {force
 `;
   let code = '';
   try {
-    code = await queryGPT(
-      [
-        {role: 'system', content: systemPrompt},
-        {role: 'user', content: task},
-      ],
-      options
-    );
+    code = await queryGPT(chatApi, [
+      new SystemChatMessage(systemPrompt),
+      new HumanChatMessage(task),
+    ]);
   } catch (e) {
     console.log(e.response.data.error);
   }
@@ -205,6 +190,11 @@ async function main(options) {
   prompt.delimiter = '>'.green;
   prompt.start();
 
+  const chatApi = new ChatOpenAI({
+    temperature: 0.1,
+    modelName: options.model ? options.model : 'gpt-3.5-turbo',
+  });
+
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const {task} = await prompt.get({
@@ -216,7 +206,7 @@ async function main(options) {
       },
     });
     try {
-      await doAction(page, task, options);
+      await doAction(chatApi, page, task, options);
     } catch (e) {
       console.log('Execution failed');
       console.log(e);

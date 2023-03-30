@@ -4,3 +4,4 @@ node_modules/
 /playwright/.cache/
 .env
 cookie.json
+.DS_Store

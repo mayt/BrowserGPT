@@ -16,6 +16,7 @@
     "commander": "^10.0.0",
     "dotenv": "^16.0.3",
     "eslint": "8.31.0",
+    "langchain": "^0.0.44",
     "node-html-parser": "^6.1.5",
     "openai": "^3.2.1",
     "playwright": "^1.31.2",
