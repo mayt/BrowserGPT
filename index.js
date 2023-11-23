@@ -10,6 +10,10 @@ import {Command} from 'commander';
 import {ChatOpenAI} from 'langchain/chat_models';
 import {HumanChatMessage, SystemChatMessage} from 'langchain/schema';
 
+import {JSDOM} from 'jsdom';
+
+const {document} = new JSDOM(`...`).window;
+
 dotenv.config();
 
 const AsyncFunction = async function () {}.constructor;
@@ -23,6 +27,7 @@ const tagsToLog = [
   'label',
   'input',
   'textarea',
+  'section',
   'select',
   'option',
   'table',
@@ -41,59 +46,55 @@ const tagsToLog = [
 
 const alwaysLog = ['a', 'input', 'button', 'li'];
 
-function getStructure(node, reducedText = false) {
-  const res = [];
-  let indention = 0;
-  function write(str) {
-    res.push('-'.repeat(indention) + str);
-  }
-  function dfs(node) {
-    let nodeModifier = '';
-    const idStr = node.id ? `#${node.id}` : '';
-    if (idStr) {
-      nodeModifier += idStr;
-    }
-    const attrValue = node.getAttribute('value');
-    if (attrValue) {
-      nodeModifier += `[value="${attrValue}"]`;
-    }
-    const attrName = node.getAttribute('name');
-    if (attrName) {
-      nodeModifier += `[name="${attrName}"]`;
-    }
-    if (tagsToLog.includes(node.rawTagName)) {
-      if (nodeModifier || alwaysLog.includes(node.rawTagName)) {
-        write(`${node.rawTagName}${nodeModifier}`);
-      }
-    }
+function createElement(node) {
+  const elem = document.createElement(node.tagName);
 
-    indention++;
-    node.childNodes.forEach((childNode) => {
-      if (childNode.nodeType === 1) {
-        dfs(childNode);
-      } else if (childNode.nodeType === 3) {
-        if (!childNode.isWhitespace) {
-          if (reducedText) {
-            if (alwaysLog.includes(node.rawTagName)) {
-              write(childNode.text);
-            }
-          } else {
-            write(childNode.text);
-          }
-        }
-      }
-    });
-    indention--;
-  }
-  dfs(node);
-  return res.join('\n');
+  const dataAttributes = Object.entries(node.attributes).filter(
+    (a) =>
+      (tagsToLog.includes(node.tagName) &&
+        (a[0].startsWith('name') ||
+          a[0].startsWith('value') ||
+          a[0].startsWith('data-component') ||
+          a[0].startsWith('data-name') ||
+          a[0].startsWith('aria-') ||
+          a[0] === 'class' ||
+          a[0] === 'type' ||
+          a[0] === 'role')) ||
+      // always log these
+      a[0] === 'href' ||
+      a[0] === 'id'
+  );
+  dataAttributes.forEach(([attr, value]) => {
+    elem.setAttribute(attr, value);
+  });
+
+  return elem;
 }
 
-const modelSiteTokenLimit = {
-  'gpt-4': 7000, // official limit 8096,
-  'gpt-4-32k': 31000, // official limit 32768,
-  'gpt-3.5-turbo': 3000, // official limit 4097,
-};
+function createTextNode(text) {
+  return document.createTextNode(text);
+}
+
+function dfs(node, parentElem) {
+  node.childNodes.forEach((childNode) => {
+    if (childNode.nodeType === 1) {
+      const childElem = createElement(childNode);
+      parentElem.appendChild(childElem);
+      dfs(childNode, childElem);
+    } else if (childNode.nodeType === 3) {
+      if (!childNode.isWhitespace) {
+        const textElem = createTextNode(childNode);
+        parentElem.appendChild(textElem);
+      }
+    }
+  });
+}
+
+function getStructure(node) {
+  const rootElem = createElement(node);
+  dfs(node, rootElem);
+  return rootElem;
+}
 
 async function parseSite(page, options = {}) {
   const html = await (await page.locator('body', {timeout: 1000})).innerHTML();
@@ -105,23 +106,9 @@ async function parseSite(page, options = {}) {
       pre: true, // keep text content when parsing
     },
   });
-  let tokenLimit =
-    modelSiteTokenLimit[options.model || 'gpt-3.5-turbo'] || Infinity;
-  let structure = getStructure(root);
-  // bad token count guess
-  if (structure.length / 4 < tokenLimit) {
-    return structure;
-  }
-  // shorten down the text and try again
-  structure = getStructure(root, true);
-  if (structure.length / 4 < tokenLimit) {
-    console.log('Site too large, using chunking down the text body'.yellow);
-    return structure;
-  }
+  const structure = getStructure(root);
 
-  // giving up on the site body
-  console.log('Site too large, dropping the site content'.yellow);
-  return '';
+  return structure.innerHTML;
 }
 
 async function queryGPT(chatApi, messages) {
@@ -148,9 +135,11 @@ You are a programmer and your job is to write code. You are working on a playwri
 
 Context:
 Your computer is a mac. Cmd is the meta key, META.
-You are on the website ${page.evaluate('location.href')}
+The browser is already open. 
+Current page url is ${await page.evaluate('location.href')}.
+Current page title is ${await page.evaluate('document.title')}.
 
-Here is the overview of the site
+Here is the overview of the site. Format is in html:
 ${await parseSite(page, options)}
 
 Your output should just be the code that is valid for PlayWright page api. When given the option to use a timeout option, use 1s. Except when using page.goto() use 10s. For actions like click, use the force option to click on hidden elements.
@@ -192,7 +181,7 @@ async function main(options) {
 
   const chatApi = new ChatOpenAI({
     temperature: 0.1,
-    modelName: options.model ? options.model : 'gpt-3.5-turbo',
+    modelName: options.model ? options.model : 'gpt-4-1106-preview',
   });
 
   // eslint-disable-next-line no-constant-condition
@@ -218,7 +207,7 @@ const program = new Command();
 
 program
   .option('-u, --url <url>', 'url to start on', 'https://www.google.com')
-  .option('-m, --model <model>', 'openai model to use', 'gpt-3.5-turbo');
+  .option('-m, --model <model>', 'openai model to use', 'gpt-4-1106-preview');
 
 program.parse();
 
