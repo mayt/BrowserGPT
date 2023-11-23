@@ -35,7 +35,7 @@ Usage: npm run start -- [options]
 
 Options:
   -u, --url <url>      url to start on (default: "https://www.google.com")
-  -m, --model <model>  openai model to use (default: "gpt-3.5-turbo")
+  -m, --model <model>  openai model to use (default: "gpt-4-1106-preview")
   -h, --help           display help for command
 ```
 
@@ -62,7 +62,7 @@ Here are some example tasks you can input:
 
 ## Limitations
 
-This script serves as a demonstration of GPT-4 and Playwright integration, and may not perform flawlessly for every task or website. Generated code snippets could fail to execute, or the model might not comprehend specific inputs. Consider providing a more detailed task description or rephrasing your input in these situations. Some websites might be too large to fit in the prompt; for these cases, try switching to `gpt4-32k`.
+This script serves as a demonstration of GPT-4 and Playwright integration, and may not perform flawlessly for every task or website. Generated code snippets could fail to execute, or the model might not comprehend specific inputs. Consider providing a more detailed task description or rephrasing your input in these situations. Some websites might be too large to fit in the prompt for smaller models like base `gpt-4`, hence we default to `gpt-4-1106-preview` with 125k tokens.
 
 ## License
 
