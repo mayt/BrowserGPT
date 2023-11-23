@@ -7,8 +7,8 @@ import colors from '@colors/colors';
 import {parse} from 'node-html-parser';
 import {Command} from 'commander';
 
-import {ChatOpenAI} from 'langchain/chat_models';
-import {HumanChatMessage, SystemChatMessage} from 'langchain/schema';
+import {ChatOpenAI} from 'langchain/chat_models/openai';
+import {HumanMessage, SystemMessage} from 'langchain/schema';
 
 import {JSDOM} from 'jsdom';
 
@@ -43,8 +43,6 @@ const tagsToLog = [
   'h5',
   'h6',
 ];
-
-const alwaysLog = ['a', 'input', 'button', 'li'];
 
 function createElement(node) {
   const elem = document.createElement(node.tagName);
@@ -154,8 +152,8 @@ await page.getByText(articleByText, { exact: true }).click(articleByText, {force
   let code = '';
   try {
     code = await queryGPT(chatApi, [
-      new SystemChatMessage(systemPrompt),
-      new HumanChatMessage(task),
+      new SystemMessage(systemPrompt),
+      new HumanMessage(task),
     ]);
   } catch (e) {
     console.log(e.response.data.error);
