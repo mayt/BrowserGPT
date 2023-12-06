@@ -42,6 +42,7 @@ const tagsToLog = [
   'h4',
   'h5',
   'h6',
+  'iframe',
 ];
 
 function createElement(node) {
@@ -73,30 +74,86 @@ function createTextNode(text) {
   return document.createTextNode(text);
 }
 
-function dfs(node, parentElem) {
-  node.childNodes.forEach((childNode) => {
+function isAdsIframe(node) {
+  const style = node.getAttribute('style') || '';
+  const id = node.getAttribute('id') || '';
+  return (
+    node.getAttribute('height') === 0 ||
+    style.includes('display: none') ||
+    id.startsWith('google_ads_iframe')
+  );
+}
+
+async function dfs(node, parentElem, childFrames = []) {
+  for (const childNode of node.childNodes) {
     if (childNode.nodeType === 1) {
-      const childElem = createElement(childNode);
-      parentElem.appendChild(childElem);
-      dfs(childNode, childElem);
+      if (childNode.tagName === 'IFRAME') {
+        // optimize for performance later
+        for (let {childFrame, attributes} of childFrames) {
+          if (
+            Object.entries(attributes).every(
+              ([attr, value]) => childNode.getAttribute(attr) === value
+            )
+          ) {
+            // skip blocks that look like ads
+            if (isAdsIframe(childNode)) {
+              continue;
+            }
+
+            const childElem = createElement(childNode);
+            parentElem.appendChild(childElem);
+            const newChildFrame = await toChildFramesWithAttributes(childFrame);
+            const bodyNode = await childFrame.locator('body', {timeout: 1000});
+            const bodyHtml = await bodyNode.innerHTML();
+            await dfs(parseFrame(bodyHtml), childElem, newChildFrame);
+
+            // ignore other matches that might be the same parent
+            break;
+          }
+        }
+      } else {
+        const childElem = createElement(childNode);
+        parentElem.appendChild(childElem);
+        await dfs(childNode, childElem, childFrames);
+      }
     } else if (childNode.nodeType === 3) {
       if (!childNode.isWhitespace) {
         const textElem = createTextNode(childNode);
         parentElem.appendChild(textElem);
       }
     }
-  });
+  }
 }
 
-function getStructure(node) {
+async function toChildFramesWithAttributes(frame) {
+  const childFramesWithAttributes = [];
+  for (let childFrame of frame.childFrames()) {
+    const childFrameElement = await childFrame.frameElement();
+    const attributes = await childFrameElement.evaluate((node) => {
+      const attrs = {};
+      for (let i = 0; i < node.attributes.length; i++) {
+        const attr = node.attributes[i];
+        attrs[attr.name] = attr.value;
+      }
+      return attrs;
+    });
+    childFramesWithAttributes.push({childFrame, attributes});
+  }
+  return childFramesWithAttributes;
+}
+
+async function getStructure(frame) {
+  const bodyNode = await frame.locator('body', {timeout: 1000});
+  const bodyHtml = await bodyNode.innerHTML();
+  const node = parseFrame(bodyHtml);
+
   const rootElem = createElement(node);
-  dfs(node, rootElem);
+  await dfs(node, rootElem, await toChildFramesWithAttributes(frame));
   return rootElem;
 }
 
-async function parseSite(page, options = {}) {
-  const html = await (await page.locator('body', {timeout: 1000})).innerHTML();
-  const root = parse(html, {
+function parseFrame(html) {
+  return parse(html, {
     blockTextElements: {
       script: false,
       noscript: false,
@@ -104,14 +161,17 @@ async function parseSite(page, options = {}) {
       pre: true, // keep text content when parsing
     },
   });
-  const structure = getStructure(root);
+}
 
+async function parseSite(page) {
+  let mainFrame = page.mainFrame();
+  const structure = await getStructure(mainFrame);
   return structure.innerHTML;
 }
 
 async function queryGPT(chatApi, messages) {
   const completion = await retry(async () => chatApi.call(messages));
-  console.log('Comands to be executed'.green);
+  console.log('Commands to be executed'.green);
   let cleanedCommands = null;
   try {
     const codeRegex = /```(.*)(\r\n|\r|\n)(?<code>[\w\W\n]+)(\r\n|\r|\n)```/;
