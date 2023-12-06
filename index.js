@@ -9,8 +9,13 @@ import {Command} from 'commander';
 
 import {ChatOpenAI} from 'langchain/chat_models/openai';
 import {HumanMessage, SystemMessage} from 'langchain/schema';
+import {AutoGPT} from 'langchain/experimental/autogpt'; // Import the experimental AutoGPT implementation
 
 import {JSDOM} from 'jsdom';
+import {DynamicTool, ReadFileTool, WriteFileTool} from 'langchain/tools';
+import {NodeFileStore} from 'langchain/stores/file/node';
+import {HNSWLib} from 'langchain/vectorstores/hnswlib';
+import {OpenAIEmbeddings} from 'langchain/embeddings/openai';
 
 const {document} = new JSDOM(`...`).window;
 
@@ -187,6 +192,91 @@ async function queryGPT(chatApi, messages) {
   return cleanedCommands;
 }
 
+async function getPlayWrightCode(task) {
+  const systemPrompt = `
+You are a programmer and your job is to write code. You are working on a playwright file. You will write the commands necessary to execute the given input. 
+
+Context:
+Your computer is a mac. Cmd is the meta key, META.
+You are on the website ${page.evaluate('location.href')}
+
+Here is the overview of the site
+${await parseSite(page, options)}
+
+Your output should just be the code that is valid for PlayWright page api. When given the option to use a timeout option, use 1s. Except when using page.goto() use 10s. For actions like click, use the force option to click on hidden elements.
+
+User: click on show hn link
+Assistant:
+\`\`\`
+const articleByText = 'Show HN';
+await page.getByText(articleByText, { exact: true }).click(articleByText, {force: true, hidden: true});
+\`\`\`
+`;
+
+  let code = '';
+  try {
+    code = await queryGPT(chatApi, [
+      new SystemMessage(systemPrompt),
+      new HumanMessage(task),
+    ]);
+
+    return code;
+  } catch (e) {
+    console.log(e.response.data.error);
+  }
+}
+
+async function execPlayWrightCode(code) {
+  try {
+    const func = AsyncFunction('page', code);
+    await func(page);
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+async function doAutoGPTAction(chatApi, task) {
+  const store = new NodeFileStore();
+  const vectorStore = new HNSWLib(new OpenAIEmbeddings(), {
+    space: 'cosine',
+    numDimensions: 1536,
+  });
+  const tools = [
+    new ReadFileTool({store}),
+    new WriteFileTool({store}),
+    new DynamicTool({
+      name: 'get playwright code',
+      description:
+        'useful for when you need to get playwright code. Returns the playwright code to execute',
+      func: async (task) => getPlayWrightCode(task),
+    }),
+    new DynamicTool({
+      name: 'execute playwright code',
+      description: 'useful for when you need to execute playwright code.',
+      func: async (code) => execPlayWrightCode(code),
+    }),
+    new DynamicTool({
+      name: 'get an overview of the site',
+      description:
+        'useful for when you need to get an overview of the current site',
+      func: async () => parseSite(),
+    }),
+  ];
+  const autogpt = AutoGPT.fromLLMAndTools(chatApi, tools, {
+    memory: vectorStore.asRetriever(),
+    aiName: 'Developer Digest Assistant',
+    aiRole: 'Assistant',
+    humanInTheLoop: false,
+    maxIterations: 4,
+  });
+
+  try {
+    await autogpt.run([task]);
+  } catch (e) {
+    console.log(e);
+  }
+}
+
 async function doAction(chatApi, page, task, options = {}) {
   const systemPrompt = `
 You are a programmer and your job is to write code. You are working on a playwright file. You will write the commands necessary to execute the given input. 
@@ -228,11 +318,13 @@ await page.getByText(articleByText, { exact: true }).click(articleByText);
   }
 }
 
+let page; // declare here for global reference
+
 async function main(options) {
   const url = options.url;
   const browser = await chromium.launch({headless: false});
   const browserContext = await browser.newContext();
-  const page = await browserContext.newPage();
+  page = await browserContext.newPage();
   await page.goto(url);
 
   prompt.message = 'BrowserGPT'.green;
@@ -255,7 +347,11 @@ async function main(options) {
       },
     });
     try {
-      await doAction(chatApi, page, task, options);
+      if (options.autogpt) {
+        await doAutoGPTAction(chatApi, task);
+      } else {
+        await doAction(chatApi, page, task, options);
+      }
     } catch (e) {
       console.log('Execution failed');
       console.log(e);
@@ -267,7 +363,8 @@ const program = new Command();
 
 program
   .option('-u, --url <url>', 'url to start on', 'https://www.google.com')
-  .option('-m, --model <model>', 'openai model to use', 'gpt-4-1106-preview');
+  .option('-m, --model <model>', 'openai model to use', 'gpt-4-1106-preview')
+  .option('-a, --autogpt <autogpt>', 'run with autogpt', false);
 
 program.parse();
 
