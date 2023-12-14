@@ -188,11 +188,16 @@ async function main(options) {
       properties: {
         task: {
           message: ' Input a task\n',
-          required: true,
+          required: false,
         },
       },
     });
     try {
+      if (task === '') {
+        console.log('Exiting'.red);
+        process.exit(0);
+      }
+
       await doAction(chatApi, page, task, options);
     } catch (e) {
       console.log('Execution failed');
