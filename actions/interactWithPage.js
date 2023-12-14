@@ -53,8 +53,6 @@ await page.getByText(articleByText, { exact: true }).click(articleByText);
 
 `;
 
-  console.log(new SystemMessage(systemPrompt), new HumanMessage(task));
-
   let code = '';
   try {
     code = await queryGPT(chatApi, [
