@@ -202,6 +202,8 @@ ${await parseSite(page, options)}
 
 Your output should just be the code that is valid for PlayWright page api. When given the option to use a timeout option, use 1s. Except when using page.goto() use 10s. For actions like click, use the force option to click on hidden elements.
 
+If the content is inside nested iframes, use 'frameLocator' function to select each layer starting from the top level page.
+
 User: click on show hn link
 Assistant:
 \`\`\`
