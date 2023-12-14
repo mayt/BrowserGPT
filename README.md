@@ -36,6 +36,7 @@ Usage: npm run start -- [options]
 Options:
   -u, --url <url>      url to start on (default: "https://www.google.com")
   -m, --model <model>  openai model to use (default: "gpt-4-1106-preview")
+  -o, --outputFilePath <outputFilePath>  path to store test code
   -h, --help           display help for command
 ```
 
