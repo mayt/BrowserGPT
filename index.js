@@ -11,6 +11,7 @@ import {ChatOpenAI} from 'langchain/chat_models/openai';
 import {HumanMessage, SystemMessage} from 'langchain/schema';
 
 import {JSDOM} from 'jsdom';
+import fs from 'fs';
 
 const {document} = new JSDOM(`...`).window;
 
@@ -164,6 +165,30 @@ await page.getByText(articleByText, { exact: true }).click(articleByText, {force
   } catch (e) {
     console.log(e);
   }
+
+  if (options.outputFilePath) {
+    appendToTestFile(task, code, options.outputFilePath);
+  }
+}
+
+function appendToTestFile(userInput, generatedCode, filePath) {
+  const content = `\t// ${userInput}\n\t${generatedCode}\n\n`;
+
+  fs.appendFileSync(filePath, content, 'utf8');
+}
+
+function createTestFile(filePath) {
+  const boilerPlate = `
+import { test, expect } from '@playwright/test'
+
+test('generated test', async ({ page }) => {
+`;
+
+  fs.writeFileSync(filePath, boilerPlate);
+}
+
+function completeTestFile(filePath) {
+  fs.appendFileSync(filePath, '});', 'utf8');
 }
 
 async function main(options) {
@@ -182,6 +207,10 @@ async function main(options) {
     modelName: options.model ? options.model : 'gpt-4-1106-preview',
   });
 
+  if (options.outputFilePath) {
+    createTestFile(options.outputFilePath);
+  }
+
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const {task} = await prompt.get({
@@ -194,6 +223,10 @@ async function main(options) {
     });
     try {
       if (task === '') {
+        if (options.outputFilePath) {
+          completeTestFile(options.outputFilePath);
+        }
+
         console.log('Exiting'.red);
         process.exit(0);
       }
@@ -210,7 +243,8 @@ const program = new Command();
 
 program
   .option('-u, --url <url>', 'url to start on', 'https://www.google.com')
-  .option('-m, --model <model>', 'openai model to use', 'gpt-4-1106-preview');
+  .option('-m, --model <model>', 'openai model to use', 'gpt-4-1106-preview')
+  .option('-o, --outputFilePath <outputFilePath>', 'path to store test code');
 
 program.parse();
 
