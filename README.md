@@ -36,6 +36,7 @@ Usage: npm run start -- [options]
 Options:
   -u, --url <url>      url to start on (default: "https://www.google.com")
   -m, --model <model>  openai model to use (default: "gpt-4-1106-preview")
+  -a. --autogpt        use autoGPT to drive interaction (default: false)
   -h, --help           display help for command
 ```
 
@@ -59,6 +60,11 @@ Here are some example tasks you can input:
 - `click on the abc article`
 - `enter abc@test.com into the email box. John and Doe in the first and last name boxes respectively`
 - `generate a spicy comment on what xyz said and put it in the comment box`
+
+With `autogpt` enabled, you can also input more complex tasks like:
+
+- `go to hn and click on the first article`
+- `use bing and find the abc article`
 
 ## Limitations
 
