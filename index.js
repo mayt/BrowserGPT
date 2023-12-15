@@ -8,7 +8,7 @@ import {Command} from 'commander';
 import {ChatOpenAI} from 'langchain/chat_models/openai';
 import {doActionWithAutoGPT} from './autogpt/index.js';
 import {interactWithPage} from './actions/index.js';
-import {createTestFile, completeTestFile} from './util/index.js';
+import {createTestFile, gracefulExit} from './util/index.js';
 
 dotenv.config();
 
@@ -36,6 +36,10 @@ async function main(options) {
     createTestFile(options.outputFilePath);
   }
 
+  process.on('exit', () => {
+    gracefulExit(options);
+  });
+
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const {task} = await prompt.get({
@@ -48,23 +52,18 @@ async function main(options) {
     });
 
     if (task === '') {
-      if (options.outputFilePath) {
-        completeTestFile(options.outputFilePath);
+      console.log('Please input a task or press CTRL+C to exit'.red);
+    } else {
+      try {
+        if (options.autogpt) {
+          await doActionWithAutoGPT(page, chatApi, task, options);
+        } else {
+          await interactWithPage(chatApi, page, task, options);
+        }
+      } catch (e) {
+        console.log('Execution failed');
+        console.log(e);
       }
-
-      console.log('Exiting'.red);
-      process.exit(0);
-    }
-
-    try {
-      if (options.autogpt) {
-        await doActionWithAutoGPT(page, chatApi, task, options);
-      } else {
-        await interactWithPage(chatApi, page, task, options);
-      }
-    } catch (e) {
-      console.log('Execution failed');
-      console.log(e);
     }
   }
 }
