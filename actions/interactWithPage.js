@@ -1,12 +1,13 @@
 import {retry} from '@lifeomic/attempt';
 import {parseSite, preprocessJsonInput} from '../util/index.js';
 import {HumanMessage, SystemMessage} from 'langchain/schema';
+import {expect} from '@playwright/test';
 
 const AsyncFunction = async function () {}.constructor;
 
 export async function interactWithPage(chatApi, page, task) {
   const code = await getPlayWrightCode(page, chatApi, task);
-  return execPlayWrightCode(page, code);
+  return execPlayWrightCode(page, code, expect);
 }
 
 async function queryGPT(chatApi, messages) {
@@ -67,10 +68,10 @@ await page.getByText(articleByText, { exact: true }).click(articleByText);
   }
 }
 
-async function execPlayWrightCode(page, code) {
+async function execPlayWrightCode(page, code, expect) {
   try {
-    const func = AsyncFunction('page', code);
-    return await func(page);
+    const func = AsyncFunction('page', 'expect', code);
+    return await func(page, expect);
   } catch (e) {
     console.log(e);
     return e;
