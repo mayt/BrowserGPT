@@ -7,7 +7,7 @@ const AsyncFunction = async function () {}.constructor;
 
 export async function interactWithPage(chatApi, page, task) {
   const code = await getPlayWrightCode(page, chatApi, task);
-  return execPlayWrightCode(page, code, expect);
+  return execPlayWrightCode(page, code);
 }
 
 async function queryGPT(chatApi, messages) {
@@ -68,9 +68,14 @@ await page.getByText(articleByText, { exact: true }).click(articleByText);
   }
 }
 
-async function execPlayWrightCode(page, code, expect) {
+async function execPlayWrightCode(page, code) {
+  const dependencies = [
+    {param: 'page', value: page},
+    {param: 'expect', value: expect},
+  ];
+
   try {
-    const func = AsyncFunction('page', 'expect', code);
+    const func = AsyncFunction(...dependencies.map((d) => d.param), code);
     return await func(page, expect);
   } catch (e) {
     console.log(e);
