@@ -35,7 +35,3 @@ export function appendToTestFile(userInput, generatedCode, filePath) {
 export function completeTestFile(filePath) {
   fs.appendFileSync(filePath, '});', 'utf8');
 }
-
-function formatCodeLine(codeLine, indentation) {
-  return `${'\t'.repeat(indentation)}${codeLine}\n`;
-}
