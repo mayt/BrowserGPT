@@ -6,7 +6,7 @@ import {AutoGPT} from 'langchain/experimental/autogpt';
 import {BetterAutoGPTOutputParser} from './BetterAutoGPTOutputParser.js';
 import {findInPage, goToLink, interactWithPage} from '../actions/index.js';
 
-export async function doActionWithAutoGPT(page, chatApi, task) {
+export async function doActionWithAutoGPT(page, chatApi, task, options) {
   const store = new NodeFileStore();
   // need a way to truncate long responses that is over 4096 tokens
   const vectorStore = new HNSWLib(new TruncatedOpenAIEmbeddings(), {
@@ -22,7 +22,7 @@ export async function doActionWithAutoGPT(page, chatApi, task) {
         'perform an action on the current page. Returns success after the interaction is successful or an error message if the interaction failed. the task should be written as a directive what the browser should do.',
       func: async (task) => {
         try {
-          await interactWithPage(chatApi, page, task);
+          await interactWithPage(chatApi, page, task, options);
           return 'Success';
         } catch (e) {
           return 'Error:' + e.toString();

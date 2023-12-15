@@ -8,6 +8,7 @@ import {Command} from 'commander';
 import {ChatOpenAI} from 'langchain/chat_models/openai';
 import {doActionWithAutoGPT} from './autogpt/index.js';
 import {interactWithPage} from './actions/index.js';
+import {createTestFile, completeTestFile} from './util/index.js';
 
 dotenv.config();
 
@@ -31,21 +32,35 @@ async function main(options) {
     modelName: options.model ? options.model : 'gpt-4-1106-preview',
   });
 
+  if (options.outputFilePath) {
+    createTestFile(options.outputFilePath);
+  }
+
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const {task} = await prompt.get({
       properties: {
         task: {
           message: ' Input a task\n',
-          required: true,
+          required: false,
         },
       },
     });
+
+    if (task === '') {
+      if (options.outputFilePath) {
+        completeTestFile(options.outputFilePath);
+      }
+
+      console.log('Exiting'.red);
+      process.exit(0);
+    }
+
     try {
       if (options.autogpt) {
-        await doActionWithAutoGPT(page, chatApi, task);
+        await doActionWithAutoGPT(page, chatApi, task, options);
       } else {
-        await interactWithPage(chatApi, page, task);
+        await interactWithPage(chatApi, page, task, options);
       }
     } catch (e) {
       console.log('Execution failed');
@@ -59,7 +74,8 @@ const program = new Command();
 program
   .option('-u, --url <url>', 'url to start on', 'https://www.google.com')
   .option('-m, --model <model>', 'openai model to use', 'gpt-4-1106-preview')
-  .option('-a, --autogpt', 'run with autogpt', false);
+  .option('-a, --autogpt', 'run with autogpt', false)
+  .option('-o, --outputFilePath <outputFilePath>', 'path to store test code');
 
 program.parse();
 
