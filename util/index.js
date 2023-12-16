@@ -44,5 +44,4 @@ export function gracefulExit(options) {
   }
 
   console.log('Exiting'.red);
-  process.exit(0);
 }
