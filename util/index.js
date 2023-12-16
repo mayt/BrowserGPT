@@ -21,13 +21,12 @@ test('generated test', async ({ page }) => {
 }
 
 export function appendToTestFile(userInput, generatedCode, filePath) {
-  const indentation = 1;
   let formattedCode = `\t// ${userInput}\n`;
 
   // Split the code into lines and format each line
   const lines = generatedCode.split('\n');
   for (const line of lines) {
-    formattedCode += formatCodeLine(line, indentation);
+    formattedCode += `\t${line.trim()}\n`;
   }
 
   fs.appendFileSync(filePath, formattedCode, 'utf8');
