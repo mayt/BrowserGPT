@@ -15,7 +15,14 @@ dotenv.config();
 async function main(options) {
   const url = options.url;
   const browser = await chromium.launch({headless: false});
-  const browserContext = await browser.newContext();
+
+  // Parse the viewport option
+  const [width, height] = options.viewport.split(',').map(Number);
+
+  const browserContext = await browser.newContext({
+    viewport: {width, height},
+  });
+
   const page = await browserContext.newPage();
   await page.goto(url);
 
@@ -71,10 +78,11 @@ async function main(options) {
 const program = new Command();
 
 program
-  .option('-u, --url <url>', 'url to start on', 'https://www.google.com')
-  .option('-m, --model <model>', 'openai model to use', 'gpt-4-1106-preview')
   .option('-a, --autogpt', 'run with autogpt', false)
-  .option('-o, --outputFilePath <outputFilePath>', 'path to store test code');
+  .option('-m, --model <model>', 'openai model to use', 'gpt-4-1106-preview')
+  .option('-o, --outputFilePath <outputFilePath>', 'path to store test code')
+  .option('-u, --url <url>', 'url to start on', 'https://www.google.com')
+  .option('-v, --viewport <viewport>', 'viewport size to use', '1280,720');
 
 program.parse();
 

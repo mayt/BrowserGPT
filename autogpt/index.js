@@ -25,6 +25,7 @@ export async function doActionWithAutoGPT(page, chatApi, task, options) {
           await interactWithPage(chatApi, page, task, options);
           return 'Success';
         } catch (e) {
+          console.log(e);
           return 'Error:' + e.toString();
         }
       },
@@ -38,6 +39,7 @@ export async function doActionWithAutoGPT(page, chatApi, task, options) {
           const found = await findInPage(page, chatApi, task);
           return 'Success: ' + found;
         } catch (e) {
+          console.log(e);
           return 'Error:' + e.toString();
         }
       },
@@ -51,6 +53,7 @@ export async function doActionWithAutoGPT(page, chatApi, task, options) {
           await goToLink(page, link);
           return 'Success';
         } catch (e) {
+          console.log(e);
           return 'Error:' + e.toString();
         }
       },
