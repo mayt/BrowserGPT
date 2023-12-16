@@ -1,4 +1,6 @@
 import fs from 'fs';
+// eslint-disable-next-line no-unused-vars
+import colors from '@colors/colors';
 
 const codeRegex = /```(.*)(\r\n|\r|\n)(?<code>[\w\W\n]+)(\r\n|\r|\n)```/;
 
@@ -29,9 +31,18 @@ export function appendToTestFile(userInput, generatedCode, filePath) {
     formattedCode += `\t${line.trim()}\n`;
   }
 
-  fs.appendFileSync(filePath, formattedCode, 'utf8');
+  fs.appendFileSync(filePath, `${formattedCode}\n`, 'utf8');
 }
 
 export function completeTestFile(filePath) {
   fs.appendFileSync(filePath, '});', 'utf8');
+}
+
+export function gracefulExit(options) {
+  if (options.outputFilePath) {
+    completeTestFile(options.outputFilePath);
+  }
+
+  console.log('Exiting'.red);
+  process.exit(0);
 }
