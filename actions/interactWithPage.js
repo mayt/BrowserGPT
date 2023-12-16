@@ -28,11 +28,11 @@ async function queryGPT(chatApi, messages) {
 
 async function getPlayWrightCode(page, chatApi, task) {
   const systemPrompt = `
-You are a programmer and your job is to write code. You are working on a playwright file. You will write the commands necessary to execute the given input. 
+You are a programmer and your job is to write code. You are working on a playwright file. You will write the commands necessary to execute the given input.
 
 Context:
 Your computer is a mac. Cmd is the meta key, META.
-The browser is already open. 
+The browser is already open.
 Current page url is ${await page.evaluate('location.href')}.
 Current page title is ${await page.evaluate('document.title')}.
 
@@ -54,18 +54,10 @@ await page.getByText(articleByText, { exact: true }).click(articleByText);
 
 `;
 
-  let code = '';
-  try {
-    code = await queryGPT(chatApi, [
-      new SystemMessage(systemPrompt),
-      new HumanMessage(task),
-    ]);
-
-    return code;
-  } catch (e) {
-    console.log(e.response.data.error);
-    throw e;
-  }
+  return await queryGPT(chatApi, [
+    new SystemMessage(systemPrompt),
+    new HumanMessage(task),
+  ]);
 }
 
 async function execPlayWrightCode(page, code) {
