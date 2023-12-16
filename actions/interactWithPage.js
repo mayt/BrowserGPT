@@ -76,7 +76,9 @@ async function execPlayWrightCode(page, code) {
 
   try {
     const func = AsyncFunction(...dependencies.map((d) => d.param), code);
-    return await func(page, expect);
+    const args = dependencies.map((d) => d.value);
+
+    return await func(...args);
   } catch (e) {
     console.log(e);
     return e;
