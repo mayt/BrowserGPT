@@ -60,10 +60,6 @@ await page.getByText(articleByText, { exact: true }).click(articleByText);
 }
 
 async function execPlayWrightCode(page, code) {
-  try {
-    const func = AsyncFunction('page', code);
-    return await func(page);
-  } catch (e) {
-    return e;
-  }
+  const func = AsyncFunction('page', code);
+  return await func(page);
 }
