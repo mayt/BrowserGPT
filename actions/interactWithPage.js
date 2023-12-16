@@ -53,18 +53,10 @@ await page.getByText(articleByText, { exact: true }).click(articleByText);
 
 `;
 
-  let code = '';
-  try {
-    code = await queryGPT(chatApi, [
-      new SystemMessage(systemPrompt),
-      new HumanMessage(task),
-    ]);
-
-    return code;
-  } catch (e) {
-    console.log(e.response.data.error);
-    throw e;
-  }
+  return await queryGPT(chatApi, [
+    new SystemMessage(systemPrompt),
+    new HumanMessage(task),
+  ]);
 }
 
 async function execPlayWrightCode(page, code) {
@@ -72,7 +64,6 @@ async function execPlayWrightCode(page, code) {
     const func = AsyncFunction('page', code);
     return await func(page);
   } catch (e) {
-    console.log(e);
     return e;
   }
 }
