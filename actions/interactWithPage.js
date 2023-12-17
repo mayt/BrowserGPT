@@ -1,5 +1,6 @@
 import {retry} from '@lifeomic/attempt';
 import {HumanMessage, SystemMessage} from 'langchain/schema';
+import {expect} from '@playwright/test';
 import {
   parseSite,
   preprocessJsonInput,
@@ -36,11 +37,11 @@ async function queryGPT(chatApi, messages) {
 
 async function getPlayWrightCode(page, chatApi, task) {
   const systemPrompt = `
-You are a programmer and your job is to write code. You are working on a playwright file. You will write the commands necessary to execute the given input. 
+You are a programmer and your job is to write code. You are working on a playwright file. You will write the commands necessary to execute the given input.
 
 Context:
 Your computer is a mac. Cmd is the meta key, META.
-The browser is already open. 
+The browser is already open.
 Current page url is ${await page.evaluate('location.href')}.
 Current page title is ${await page.evaluate('document.title')}.
 
@@ -69,6 +70,12 @@ await page.getByText(articleByText, { exact: true }).click(articleByText);
 }
 
 async function execPlayWrightCode(page, code) {
-  const func = AsyncFunction('page', code);
-  return await func(page);
+  const dependencies = [
+    {param: 'page', value: page},
+    {param: 'expect', value: expect},
+  ];
+
+  const func = AsyncFunction(...dependencies.map((d) => d.param), code);
+  const args = dependencies.map((d) => d.value);
+  return await func(...args);
 }
