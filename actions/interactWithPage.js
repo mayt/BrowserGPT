@@ -1,12 +1,21 @@
 import {retry} from '@lifeomic/attempt';
-import {parseSite, preprocessJsonInput} from '../util/index.js';
 import {HumanMessage, SystemMessage} from 'langchain/schema';
 import {expect} from '@playwright/test';
+import {
+  parseSite,
+  preprocessJsonInput,
+  appendToTestFile,
+} from '../util/index.js';
 
 const AsyncFunction = async function () {}.constructor;
 
-export async function interactWithPage(chatApi, page, task) {
+export async function interactWithPage(chatApi, page, task, options) {
   const code = await getPlayWrightCode(page, chatApi, task);
+
+  if (options.outputFilePath) {
+    appendToTestFile(task, code, options.outputFilePath);
+  }
+
   return execPlayWrightCode(page, code);
 }
 
