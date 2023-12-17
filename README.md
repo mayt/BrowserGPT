@@ -34,11 +34,12 @@ npm run start
 Usage: npm run start -- [options]
 
 Options:
-  -u, --url <url>            url to start on (default: "https://www.google.com")
-  -m, --model <model>        openai model to use (default: "gpt-4-1106-preview")
-  -a, --autogpt              run with autogpt (default: false)
-  -v, --viewport <viewport>  viewport size to use (default: "1280,720")
-  -h, --help                 display help for command
+  -a, --autogpt                          run with autogpt (default: false)
+  -m, --model <model>                    openai model to use (default: "gpt-4-1106-preview")
+  -o, --outputFilePath <outputFilePath>  path to store test code
+  -u, --url <url>                        url to start on (default: "https://www.google.com")
+  -v, --viewport <viewport>              viewport size to use (default: "1280,720")
+  -h, --help                             display help for command
 ```
 
 ## Usage
