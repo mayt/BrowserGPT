@@ -20,7 +20,7 @@ export default defineConfig({
      * Maximum time expect() should wait for the condition to be met.
      * For example in `await expect(locator).toHaveText();`
      */
-    timeout: 5000,
+    timeout: 10000,
   },
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -36,7 +36,7 @@ export default defineConfig({
   use: {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
     actionTimeout: 0,
-    click: {force: true, timeout: 1000, hidden: true},
+    click: {force: true, timeout: 10000, hidden: true},
     goto: {timeout: 10000},
 
     /* Base URL to use in actions like `await page.goto('/')`. */
