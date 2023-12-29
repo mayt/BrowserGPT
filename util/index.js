@@ -1,4 +1,6 @@
 import fs from 'fs';
+import {exec} from 'child_process';
+
 // eslint-disable-next-line no-unused-vars
 import colors from '@colors/colors';
 
@@ -23,12 +25,12 @@ test('generated test', async ({ page }) => {
 }
 
 export function appendToTestFile(userInput, generatedCode, filePath) {
-  let formattedCode = `\t// ${userInput}\n`;
+  let formattedCode = `// ${userInput}\n`;
 
   // Split the code into lines and format each line
   const lines = generatedCode.split('\n');
   for (const line of lines) {
-    formattedCode += `\t${line.trim()}\n`;
+    formattedCode += `${line.trim()}\n`;
   }
 
   fs.appendFileSync(filePath, `${formattedCode}\n`, 'utf8');
@@ -36,6 +38,7 @@ export function appendToTestFile(userInput, generatedCode, filePath) {
 
 export function completeTestFile(filePath) {
   fs.appendFileSync(filePath, '});', 'utf8');
+  runESLint(filePath);
 }
 
 export function gracefulExit(options) {
@@ -44,4 +47,10 @@ export function gracefulExit(options) {
   }
 
   console.log('Exiting'.red);
+}
+
+function runESLint(filePath) {
+  exec(`npx eslint ${filePath} --fix`, () => {
+    console.log(`ESLint ran on ${filePath}`.green);
+  });
 }
