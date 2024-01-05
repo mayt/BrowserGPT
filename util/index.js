@@ -45,3 +45,19 @@ export function gracefulExit(options) {
 
   console.log('Exiting'.red);
 }
+
+export async function logPageScreenshot(page) {
+  const buffer = await page.screenshot();
+
+  // Define the escape sequences for iTerm2
+  const ESC = '\x1b';
+  const BELL = '\x07';
+
+  // Construct the iTerm2 Inline Images Protocol command
+  const command = `${ESC}]1337;File=inline=1:${buffer.toString(
+    'base64'
+  )}${BELL}`;
+
+  // Log the command to the console - this will display the image in iTerm2
+  console.log(command);
+}

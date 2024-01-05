@@ -8,13 +8,13 @@ import {Command} from 'commander';
 import {ChatOpenAI} from 'langchain/chat_models/openai';
 import {doActionWithAutoGPT} from './autogpt/index.js';
 import {interactWithPage} from './actions/index.js';
-import {createTestFile, gracefulExit} from './util/index.js';
+import {createTestFile, gracefulExit, logPageScreenshot} from './util/index.js';
 
 dotenv.config();
 
 async function main(options) {
   const url = options.url;
-  const browser = await chromium.launch({headless: false});
+  const browser = await chromium.launch({headless: options.headless});
 
   // Parse the viewport option
   const [width, height] = options.viewport.split(',').map(Number);
@@ -27,8 +27,15 @@ async function main(options) {
   await page.goto(url);
 
   prompt.message = 'BrowserGPT'.green;
+  const promptOptions = [];
   if (options.autogpt) {
-    prompt.message += ' (+AutoGPT)'.green;
+    promptOptions.push('+AutoGPT');
+  }
+  if (options.headless) {
+    promptOptions.push('+headless');
+  }
+  if (promptOptions.length > 0) {
+    prompt.message += ` (${promptOptions.join(' ')})`.green;
   }
   prompt.delimiter = '>'.green;
 
@@ -67,6 +74,9 @@ async function main(options) {
         } else {
           await interactWithPage(chatApi, page, task, options);
         }
+        if (options.headless) {
+          await logPageScreenshot(page);
+        }
       } catch (e) {
         console.log('Execution failed');
         console.log(e);
@@ -82,7 +92,8 @@ program
   .option('-m, --model <model>', 'openai model to use', 'gpt-4-1106-preview')
   .option('-o, --outputFilePath <outputFilePath>', 'path to store test code')
   .option('-u, --url <url>', 'url to start on', 'https://www.google.com')
-  .option('-v, --viewport <viewport>', 'viewport size to use', '1280,720');
+  .option('-v, --viewport <viewport>', 'viewport size to use', '1280,720')
+  .option('-h, --headless', 'run in headless mode', false);
 
 program.parse();
 
