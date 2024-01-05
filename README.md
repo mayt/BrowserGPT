@@ -22,6 +22,14 @@ OPENAI_API_KEY=your_openai_api_key
 
 Replace `your_openai_api_key` with your actual OpenAI API key.
 
+#### First run only:
+
+You may need to install Playwright executables. Run the following to install them.
+
+```sh
+npx playwright install
+```
+
 ### Run the script:
 
 ```sh
