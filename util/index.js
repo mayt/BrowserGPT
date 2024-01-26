@@ -1,4 +1,5 @@
 import fs from 'fs';
+import tmp from 'tmp';
 // eslint-disable-next-line no-unused-vars
 import colors from '@colors/colors';
 
@@ -48,6 +49,8 @@ export function gracefulExit(options) {
 
 export async function logPageScreenshot(page) {
   const buffer = await page.screenshot();
+  const tmpScreenShot = tmp.fileSync({prefix: 'screenshot', postfix: '.png'});
+  fs.writeFileSync(tmpScreenShot.name, buffer);
 
   // Define the escape sequences for iTerm2
   const ESC = '\x1b';
@@ -60,4 +63,5 @@ export async function logPageScreenshot(page) {
 
   // Log the command to the console - this will display the image in iTerm2
   console.log(command);
+  console.log(`Screenshot: ${tmpScreenShot.name}`);
 }
