@@ -5,6 +5,7 @@ import {DynamicTool, ReadFileTool, WriteFileTool} from 'langchain/tools';
 import {AutoGPT} from 'langchain/experimental/autogpt';
 import {BetterAutoGPTOutputParser} from './BetterAutoGPTOutputParser.js';
 import {findInPage, goToLink, interactWithPage} from '../actions/index.js';
+import {logPageScreenshot} from '../util/index.js';
 
 export async function doActionWithAutoGPT(page, chatApi, task, options) {
   const store = new NodeFileStore();
@@ -27,6 +28,10 @@ export async function doActionWithAutoGPT(page, chatApi, task, options) {
         } catch (e) {
           console.log(e);
           return 'Error:' + e.toString();
+        } finally {
+          if (options.headless) {
+            await logPageScreenshot(page);
+          }
         }
       },
     }),
@@ -41,6 +46,10 @@ export async function doActionWithAutoGPT(page, chatApi, task, options) {
         } catch (e) {
           console.log(e);
           return 'Error:' + e.toString();
+        } finally {
+          if (options.headless) {
+            await logPageScreenshot(page);
+          }
         }
       },
     }),
@@ -55,6 +64,10 @@ export async function doActionWithAutoGPT(page, chatApi, task, options) {
         } catch (e) {
           console.log(e);
           return 'Error:' + e.toString();
+        } finally {
+          if (options.headless) {
+            await logPageScreenshot(page);
+          }
         }
       },
     }),
