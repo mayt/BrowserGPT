@@ -46,7 +46,8 @@ function createElement(node) {
           a[0] === 'role')) ||
       // always log these
       a[0] === 'href' ||
-      a[0] === 'id'
+      a[0] === 'id' ||
+      a[0] === 'type'
   );
   dataAttributes.forEach(([attr, value]) => {
     elem.setAttribute(attr, value);
